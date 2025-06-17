@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+MAX_QUESTIONS = 50  # Limit the number of questions to avoid clutter
 
 # Set the title at the top of the app
 st.title("🛠️ Custom Survey Form Builder")
@@ -9,7 +10,7 @@ st.title("🛠️ Custom Survey Form Builder")
 st.write("Define your own survey form by adding questions and choosing their type.")
 
 # Ask the form creator how many questions they want to include
-num_questions = st.number_input("How many questions?", min_value=1, max_value=20, step=1)
+num_questions = st.number_input("How many questions?", min_value=1, max_value=MAX_QUESTIONS, step=1)
 
 # We'll store all the defined questions in this list
 questions = []
@@ -49,7 +50,6 @@ for i in range(int(num_questions)):
 # Ask for a title to name the form
 form_title = st.text_input("Give your form a title:", value="My Survey")
 
-# Save the form when the button is clicked
 # Save the form when the button is clicked
 if st.button("Save Survey Form"):
     # Store the full form as a dictionary

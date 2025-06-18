@@ -80,18 +80,20 @@ for raw_col, clean_col in zip(clean_columns.keys(), clean_columns.values()):
         top_n = counts.head(5)
         for _, row in top_n.iterrows():
             label = row['Category']
+            percentage = (row['Count'] / len(df)) * 100
             if len(label) > 40:
                 label_display = label[:40] + "..."
-                st.write(f"💬 **{int(row['Count'])}** said: *{label_display}* ❕")
+                st.write(f"💬 **{int(row['Count'])}** said: *{label_display}* (**{percentage:.1f}%**) ❕")
                 with st.expander("🔍 View full response"):
                     st.write(label)
             else:
-                st.write(f"💬 **{int(row['Count'])}** said: *{label}*")
+                st.write(f"💬 **{int(row['Count'])}** said: *{label}* (**{percentage:.1f}%**)")
 
         if len(counts) > 5:
             with st.expander("📖 See all responses"):
                 for _, row in counts.iterrows():
-                    st.write(f"**{int(row['Count'])}** → {row['Category']}")
+                    pct = (row['Count'] / len(df)) * 100
+                    st.write(f"**{int(row['Count'])}** → {row['Category']} (**{pct:.1f}%**)")
 
         if len(counts) > 1:
             with st.expander("📊 Show chart"):
@@ -101,6 +103,13 @@ for raw_col, clean_col in zip(clean_columns.keys(), clean_columns.values()):
                     color=alt.Color("Category", legend=None)
                 ).properties(height=300)
                 st.altair_chart(chart, use_container_width=True)
+
+                st.markdown("#### 🥧 Pie Chart")
+                fig, ax = plt.subplots()
+                ax.pie(counts['Count'], labels=counts['Category'], autopct='%1.1f%%', startangle=140, textprops={'color':'white'})
+                ax.axis('equal')
+                fig.patch.set_facecolor('#243b55')
+                st.pyplot(fig)
 
     elif pd.api.types.is_numeric_dtype(df[clean_col]):
         avg = df[clean_col].mean()

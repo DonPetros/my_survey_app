@@ -3,7 +3,7 @@ import os
 import json
 from pathlib import Path
 
-# Apply custom background and refined hover zoom effects
+# Apply custom background, refined zoom effects, and override grey inputs
 st.markdown("""
     <style>
     .stApp {
@@ -36,6 +36,16 @@ st.markdown("""
         border-radius: 12px;
         margin-bottom: 1.5rem;
     }
+    /* Remove default grey input backgrounds */
+    section[data-testid="stTextInput"] input,
+    section[data-testid="stNumberInput"] input,
+    section[data-testid="stSelectbox"] div[role="combobox"] {
+        background-color: transparent !important;
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        padding: 0.5rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -52,7 +62,6 @@ questions = []
 
 # Loop to create question blocks
 for i in range(int(num_questions)):
-    
     st.markdown(f"<div class='question-block'>", unsafe_allow_html=True)
     st.markdown(f"### Question {i+1}")
 

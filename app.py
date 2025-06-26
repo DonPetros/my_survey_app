@@ -52,35 +52,35 @@ questions = []
 
 # Loop to create question blocks
 for i in range(int(num_questions)):
-    with st.container():
-        st.markdown(f"<div class='question-block'>", unsafe_allow_html=True)
-        st.markdown(f"### Question {i+1}")
+    
+    st.markdown(f"<div class='question-block'>", unsafe_allow_html=True)
+    st.markdown(f"### Question {i+1}")
 
-        # Input question text
-        q_text = st.text_input(f"Enter question text for Q{i+1}:", key=f"text_{i}")
+    # Input question text
+    q_text = st.text_input(f"Enter question text for Q{i+1}:", key=f"text_{i}")
 
-        # Choose question type
-        q_type = st.selectbox(
-            f"Select type for Q{i+1}:",
-            options=["Text", "Scale (1–5)", "Multiple Choice"],
-            key=f"type_{i}"
+    # Choose question type
+    q_type = st.selectbox(
+        f"Select type for Q{i+1}:",
+        options=["Text", "Scale (1–5)", "Multiple Choice"],
+        key=f"type_{i}"
+    )
+
+    q_data = {
+        "text": q_text,
+        "type": q_type
+    }
+
+    # Handle multiple choice input
+    if q_type == "Multiple Choice":
+        options_text = st.text_input(
+            f"Enter options for Q{i+1} (comma-separated, e.g. Red, Blue, Green):",
+            key=f"options_{i}"
         )
+        q_data["options"] = [opt.strip() for opt in options_text.split(",") if opt.strip()]
 
-        q_data = {
-            "text": q_text,
-            "type": q_type
-        }
-
-        # Handle multiple choice input
-        if q_type == "Multiple Choice":
-            options_text = st.text_input(
-                f"Enter options for Q{i+1} (comma-separated, e.g. Red, Blue, Green):",
-                key=f"options_{i}"
-            )
-            q_data["options"] = [opt.strip() for opt in options_text.split(",") if opt.strip()]
-
-        questions.append(q_data)
-        st.markdown("</div>", unsafe_allow_html=True)
+    questions.append(q_data)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Form title input
 form_title = st.text_input("Give your form a title:", value="My Survey")

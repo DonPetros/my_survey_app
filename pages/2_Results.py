@@ -3,7 +3,6 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-import altair as alt
 from io import StringIO
 
 # Apply consistent visual styling
@@ -54,21 +53,21 @@ csv_buffer = StringIO()
 df.to_csv(csv_buffer, index=False)
 st.download_button("📥 Download Full Results (CSV)", csv_buffer.getvalue(), file_name=selected_csv, mime="text/csv")
 
-# Clean column names to avoid chart issues
+# Clean column names
 clean_columns = {col: col.replace(":", "").strip() for col in df.columns}
 df = df.rename(columns=clean_columns)
 
 for raw_col, clean_col in zip(clean_columns.keys(), clean_columns.values()):
     st.markdown(f"### ✏️ {raw_col}")
 
-    sort_order = st.radio(
-        f"Sort responses for '{raw_col}':",
-        ["Most popular", "Least popular", "Alphabetical"],
-        key=f"sort_{clean_col}",
-        horizontal=True
-    )
-
     if df[clean_col].dtype == object:
+        sort_order = st.radio(
+            f"Sort responses for '{raw_col}':",
+            ["Most popular", "Least popular", "Alphabetical"],
+            key=f"sort_{clean_col}",
+            horizontal=True
+        )
+
         counts = df[clean_col].value_counts().reset_index()
         counts.columns = ["Category", "Count"]
 
@@ -96,17 +95,9 @@ for raw_col, clean_col in zip(clean_columns.keys(), clean_columns.values()):
                     st.write(f"**{int(row['Count'])}** → {row['Category']} (**{pct:.1f}%**)")
 
         if len(counts) > 1:
-            with st.expander("📊 Show chart"):
-                chart = alt.Chart(counts).mark_bar().encode(
-                    x=alt.X("Category", sort="-y"),
-                    y="Count",
-                    color=alt.Color("Category", legend=None)
-                ).properties(height=300)
-                st.altair_chart(chart, use_container_width=True)
-
-                st.markdown("#### 🥧 Pie Chart")
+            with st.expander("🥧 Show Pie Chart"):
                 fig, ax = plt.subplots()
-                ax.pie(counts['Count'], labels=counts['Category'], autopct='%1.1f%%', startangle=140, textprops={'color':'white'})
+                ax.pie(counts['Count'], labels=counts['Category'], autopct='%1.1f%%', startangle=140, textprops={'color': 'white'})
                 ax.axis('equal')
                 fig.patch.set_facecolor('#243b55')
                 st.pyplot(fig)
@@ -122,6 +113,10 @@ for raw_col, clean_col in zip(clean_columns.keys(), clean_columns.values()):
             ax.set_ylabel("Count")
             ax.set_facecolor("#f0f0f0")
             st.pyplot(fig)
+
+        with st.expander("👥 View individual ratings"):
+            for i, val in enumerate(df[clean_col]):
+                st.write(f"👤 Respondent {i+1}: **{val}**")
 
     else:
         st.info("Unsupported data type for this column.")

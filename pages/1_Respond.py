@@ -4,7 +4,7 @@ import os
 import csv
 from datetime import datetime
 
-# 🔧 Style
+# ========== 🔧 Custom Style ==========
 st.markdown("""
     <style>
     .stApp {
@@ -34,32 +34,37 @@ st.markdown("""
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
         margin-bottom: 2rem;
     }
+    /* ✅ Hides space left by collapsed selectbox label */
+    div[data-testid="stSelectbox"] > label {
+        display: none !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# 📁 Load available survey forms
+# ========== 📁 Load Available Survey Forms ==========
 form_dir = "forms"
 form_files = [f for f in os.listdir(form_dir) if f.endswith(".json")]
 
+# If no forms are found, show a warning and stop execution
 if not form_files:
     st.warning("No survey forms found.")
     st.stop()
 
-# 📋 Select a form
+# ========== 📋 Form Selector (Label hidden via CSS) ==========
 selected_form_file = st.selectbox("", form_files, label_visibility="collapsed")
 
-# 📄 Load form data
+# ========== 📄 Load Form JSON ==========
 with open(os.path.join(form_dir, selected_form_file), "r") as f:
     form = json.load(f)
 
-# 📝 Show form title only
+# ========== 📝 Show Form Title ==========
 st.header(form["title"])
 
-# 🧠 Session state
+# ========== 🧠 Handle Session State for Responses and Navigation ==========
 responses = st.session_state.get("responses", [None] * len(form["questions"]))
 current_q = st.session_state.get("current_q", 0)
 
-# ❓ Current question
+# ========== ❓ Display Current Question ==========
 question = form["questions"][current_q]
 q_text = question["text"]
 q_type = question["type"]
@@ -68,6 +73,7 @@ with st.container():
     st.markdown("<div class='question-card'>", unsafe_allow_html=True)
     st.subheader(f"Q{current_q + 1}: {q_text}")
 
+    # Display appropriate input based on question type
     if q_type == "Text":
         answer = st.text_input("Your answer:", value=responses[current_q] or "")
     elif q_type == "Scale (1–5)":
@@ -78,38 +84,45 @@ with st.container():
     else:
         answer = "Unsupported question type"
 
+    # Save answer to session state
     responses[current_q] = answer
     st.session_state["responses"] = responses
     st.markdown("</div>", unsafe_allow_html=True)
 
-# 🔘 Navigation
+# ========== 🔘 Navigation Buttons ==========
 col1, col2, col3 = st.columns([1, 1, 2])
 
+# ⬅️ Go to previous question
 with col1:
     if current_q > 0 and st.button("⬅️ Previous"):
         st.session_state["current_q"] = current_q - 1
         st.rerun()
 
+# ➡️ Go to next question
 with col2:
     if current_q < len(form["questions"]) - 1 and st.button("Next ➡️"):
         st.session_state["current_q"] = current_q + 1
         st.rerun()
 
+# 📩 Submit responses and save to CSV
 with col3:
     if current_q == len(form["questions"]) - 1 and st.button("📩 Submit Responses"):
         os.makedirs("responses", exist_ok=True)
-
         form_name = selected_form_file.replace(".json", "")
         csv_filename = f"responses/{form_name}.csv"
+
+        # Prepare row with answers
         row = {f"Q{i+1}: {q['text']}": responses[i] for i, q in enumerate(form["questions"])}
         write_header = not os.path.exists(csv_filename)
 
+        # Write to CSV file
         with open(csv_filename, "a", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=row.keys())
             if write_header:
                 writer.writeheader()
             writer.writerow(row)
 
+        # Show success and clear session
         st.success("✅ Your responses have been submitted!")
         st.info(f"Saved to `{csv_filename}`")
         del st.session_state["responses"]

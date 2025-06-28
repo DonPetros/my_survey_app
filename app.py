@@ -73,6 +73,7 @@ if page == "🏗️ Create Form" and st.session_state.logged_in:
 elif page == "📝 Answer a Form":
     st.title("📝 Respond to a Survey")
     form_dir = "forms"
+    os.makedirs("forms", exist_ok=True)
     form_files = [f for f in os.listdir(form_dir) if f.endswith(".json")]
 
     if not form_files:

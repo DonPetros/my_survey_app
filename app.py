@@ -170,6 +170,7 @@ elif page == "📝 Answer a Form":
 elif page == "📊 View Results" and st.session_state.logged_in:
     st.title("📊 Survey Summary & Insights")
     response_dir = "responses"
+    os.makedirs(response_dir, exist_ok=True)
     csv_files = [f for f in os.listdir(response_dir) if f.endswith(".csv")]
 
     if not csv_files:

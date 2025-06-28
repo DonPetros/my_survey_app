@@ -85,7 +85,7 @@ if page == "🏗️ Create Form" and st.session_state.logged_in:
         q_type = st.selectbox(f"Select type for Q{i+1}:", ["Text", "Scale (1–5)", "Multiple Choice"], key=f"type_{i}")
         q_data = {"text": q_text, "type": q_type}
         if q_type == "Multiple Choice":
-            options_text = st.text_input(f"Enter options for Q{i+1} (comma-separated):", key=f"options_{i}")
+            options_text = st.text_input(f"Enter options for Q{i+1} (comma-separated, e.g. Yes, No, Maybe):", key=f"options_{i}")
             q_data["options"] = [opt.strip() for opt in options_text.split(",") if opt.strip()]
         questions.append(q_data)
 

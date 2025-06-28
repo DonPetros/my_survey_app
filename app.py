@@ -15,8 +15,8 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "letmein"
+ADMIN_USERNAME = st.secrets["admin"]["username"]
+ADMIN_PASSWORD = st.secrets["admin"]["password"]
 
 if not st.session_state.logged_in:
     st.sidebar.title("🔑 Admin Login")
@@ -36,6 +36,13 @@ if st.session_state.logged_in:
     page = st.sidebar.radio("Go to:", ["🏗️ Create Form", "📝 Answer a Form", "📊 View Results", "🚪 Logout"])
 else:
     page = st.sidebar.radio("Go to:", ["📝 Answer a Form"])
+
+# ✅ Handle logout directly
+if page == "🚪 Logout":
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    st.success("🔓 You have been logged out.")
+    st.stop()
 
 # =====================
 # 🔧 Global Styling

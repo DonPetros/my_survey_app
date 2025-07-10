@@ -10,7 +10,7 @@ import sqlite3
 import hashlib
 
 # =====================
-# 🗃️ SQLite Setup for User Authentication
+# 📃️ SQLite Setup for User Authentication
 # =====================
 conn = sqlite3.connect("users.db")
 c = conn.cursor()
@@ -64,7 +64,7 @@ if not st.session_state.logged_in:
 # =====================
 # 🚪 Sidebar Navigation
 # =====================
-st.sidebar.title("🧭 Navigation")
+st.sidebar.title("🫭 Navigation")
 if st.session_state.logged_in:
     page = st.sidebar.radio("Go to:", ["📇 Create Form", "📝 Answer a Form", "📊 View Results", "🚪 Logout"])
 else:
@@ -77,16 +77,15 @@ if page == "🚪 Logout":
     st.success("🔓 You have been logged out.")
     st.stop()
 
-# 🔧 The rest of your app (Create Form, Answer, View Results) stays unchanged...
-# You can copy and paste the rest of your logic below here
-
-# For example:
+# =====================
+# 📇 Create Form (Admin Only)
+# =====================
 if page == "📇 Create Form" and st.session_state.logged_in:
     st.title("🌌 Build a Survey Across the Cosmos")
     st.markdown("Add your own questions, choose the answer format, and save your custom survey form.")
 
     MAX_QUESTIONS = 50
-    num_questions = st.number_input("How many questions would you like?", min_value=1, max_value=MAX_QUESTIONS, step=1)
+    num_questions = st.number_input("How many questions would you like?", min_value=1, max_value=MAX_QUESTIONS, step=1, key="num_questions_input")
     questions = []
 
     for i in range(int(num_questions)):
@@ -99,14 +98,23 @@ if page == "📇 Create Form" and st.session_state.logged_in:
             q_data["options"] = [opt.strip() for opt in options_text.split(",") if opt.strip()]
         questions.append(q_data)
 
-    form_title = st.text_input("Give your form a title:", value="My Survey")
+    form_title = st.text_input("Give your form a title:", value="My Survey", key="form_title_input")
     if st.button("📂 Save Survey Form"):
-        form = {"title": form_title, "questions": questions}
-        os.makedirs("forms", exist_ok=True)
-        filename = f"forms/{form_title.replace(' ', '_').lower()}.json"
-        with open(filename, "w") as f:
-            json.dump(form, f, indent=4)
-        st.success(f"✅ Survey form saved as `{filename}`")
+        valid = True
+        for idx, q in enumerate(questions):
+            if not q["text"].strip():
+                st.error(f"❗ Question {idx+1} is empty. Please enter a question.")
+                valid = False
+            if q["type"] == "Multiple Choice" and ("options" not in q or not q["options"]):
+                st.error(f"❗ Question {idx+1} has no multiple-choice options.")
+                valid = False
+        if valid:
+            form = {"title": form_title, "questions": questions}
+            os.makedirs("forms", exist_ok=True)
+            filename = f"forms/{form_title.replace(' ', '_').lower()}.json"
+            with open(filename, "w") as f:
+                json.dump(form, f, indent=4)
+            st.success(f"✅ Survey form saved as `{filename}`")
 
 # =====================
 # 🔧 Global Styling
@@ -138,46 +146,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-# =====================
-# 📇 Create Form (Admin Only)
-# =====================
-if page == "📇 Create Form" and st.session_state.logged_in:
-    st.title("🌌 Build a Survey Across the Cosmos")
-    st.markdown("Add your own questions, choose the answer format, and save your custom survey form.")
-
-    MAX_QUESTIONS = 50
-    num_questions = st.number_input("How many questions would you like?", min_value=1, max_value=MAX_QUESTIONS, step=1)
-    questions = []
-
-    for i in range(int(num_questions)):
-        st.markdown(f"### Question {i+1}")
-        q_text = st.text_input(f"Enter question text for Q{i+1}:", key=f"text_{i}")
-        q_type = st.selectbox(f"Select type for Q{i+1}:", ["Text", "Scale (1–5)", "Multiple Choice"], key=f"type_{i}")
-        q_data = {"text": q_text, "type": q_type}
-        if q_type == "Multiple Choice":
-            options_text = st.text_input(f"Enter options for Q{i+1} (comma-separated, e.g. Yes, No, Maybe):", key=f"options_{i}")
-            q_data["options"] = [opt.strip() for opt in options_text.split(",") if opt.strip()]
-        questions.append(q_data)
-
-    form_title = st.text_input("Give your form a title:", value="My Survey")
-    if st.button("📂 Save Survey Form"):
-        valid = True
-        for idx, q in enumerate(questions):
-            if not q["text"].strip():
-                st.error(f"❗ Question {idx+1} is empty. Please enter a question.")
-                valid = False
-            if q["type"] == "Multiple Choice" and ("options" not in q or not q["options"]):
-                st.error(f"❗ Question {idx+1} has no multiple-choice options.")
-                valid = False
-        if valid:
-            form = {"title": form_title, "questions": questions}
-            os.makedirs("forms", exist_ok=True)
-            filename = f"forms/{form_title.replace(' ', '_').lower()}.json"
-            with open(filename, "w") as f:
-                json.dump(form, f, indent=4)
-            st.success(f"✅ Survey form saved as `{filename}`")
-
 # =====================
 # 📝 Answer a Form (Public)
 # =====================

@@ -6,6 +6,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from io import StringIO
+import sqlite3
+
+# =====================
+# 🗃️ SQLite Setup for Admin Authentication
+# =====================
+conn = sqlite3.connect("users.db")
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS admin_users (
+    username TEXT PRIMARY KEY,
+    password TEXT NOT NULL
+)''')
+conn.commit()
 
 # =====================
 # 👤 Login System Setup (Admin only)
@@ -15,25 +27,26 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-ADMIN_USERNAME = st.secrets["admin"]["username"]
-ADMIN_PASSWORD = st.secrets["admin"]["password"]
-
 if not st.session_state.logged_in:
     st.sidebar.title("🔑 Admin Login")
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
     if st.sidebar.button("Login"):
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        c.execute("SELECT * FROM admin_users WHERE username = ? AND password = ?", (username, password))
+        user = c.fetchone()
+        if user:
             st.session_state.logged_in = True
             st.session_state.username = username
             st.rerun()
+        else:
+            st.sidebar.error("Invalid credentials.")
 
 # =====================
 # 🚪 Sidebar Navigation
 # =====================
-st.sidebar.title("🧭 Navigation")
+st.sidebar.title("🧽 Navigation")
 if st.session_state.logged_in:
-    page = st.sidebar.radio("Go to:", ["🏗️ Create Form", "📝 Answer a Form", "📊 View Results", "🚪 Logout"])
+    page = st.sidebar.radio("Go to:", ["📇 Create Form", "📝 Answer a Form", "📊 View Results", "🚪 Logout"])
 else:
     page = st.sidebar.radio("Go to:", ["📝 Answer a Form"])
 
@@ -76,9 +89,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =====================
-# 🏗️ Create Form (Admin Only)
+# 📇 Create Form (Admin Only)
 # =====================
-if page == "🏗️ Create Form" and st.session_state.logged_in:
+if page == "📇 Create Form" and st.session_state.logged_in:
     st.title("🌌 Build a Survey Across the Cosmos")
     st.markdown("Add your own questions, choose the answer format, and save your custom survey form.")
 
@@ -98,12 +111,21 @@ if page == "🏗️ Create Form" and st.session_state.logged_in:
 
     form_title = st.text_input("Give your form a title:", value="My Survey")
     if st.button("📂 Save Survey Form"):
-        form = {"title": form_title, "questions": questions}
-        os.makedirs("forms", exist_ok=True)
-        filename = f"forms/{form_title.replace(' ', '_').lower()}.json"
-        with open(filename, "w") as f:
-            json.dump(form, f, indent=4)
-        st.success(f"✅ Survey form saved as `{filename}`")
+        valid = True
+        for idx, q in enumerate(questions):
+            if not q["text"].strip():
+                st.error(f"❗ Question {idx+1} is empty. Please enter a question.")
+                valid = False
+            if q["type"] == "Multiple Choice" and ("options" not in q or not q["options"]):
+                st.error(f"❗ Question {idx+1} has no multiple-choice options.")
+                valid = False
+        if valid:
+            form = {"title": form_title, "questions": questions}
+            os.makedirs("forms", exist_ok=True)
+            filename = f"forms/{form_title.replace(' ', '_').lower()}.json"
+            with open(filename, "w") as f:
+                json.dump(form, f, indent=4)
+            st.success(f"✅ Survey form saved as `{filename}`")
 
 # =====================
 # 📝 Answer a Form (Public)
@@ -155,21 +177,26 @@ elif page == "📝 Answer a Form":
             st.rerun()
     with col3:
         if current_q == len(form["questions"]) - 1 and st.button("📩 Submit Responses"):
-            os.makedirs("responses", exist_ok=True)
-            form_name = selected_form_file.replace(".json", "")
-            csv_filename = f"responses/{form_name}.csv"
-            row = {f"Q{i+1}: {q['text']}": responses[i] for i, q in enumerate(form["questions"])}
-            write_header = not os.path.exists(csv_filename)
-            with open(csv_filename, "a", newline="", encoding="utf-8") as f:
-                writer = csv.DictWriter(f, fieldnames=row.keys())
-                if write_header:
-                    writer.writeheader()
-                writer.writerow(row)
-            st.success("✅ Your responses have been submitted!")
-            st.info(f"Saved to `{csv_filename}`")
-            del st.session_state["responses"]
-            del st.session_state["current_q"]
-            st.rerun()
+            if any(r is None or (isinstance(r, str) and not r.strip()) for r in responses):
+                st.error("❗ Please answer all questions before submitting.")
+            else:
+                os.makedirs("responses", exist_ok=True)
+                form_name = selected_form_file.replace(".json", "")
+                csv_filename = f"responses/{form_name}.csv"
+                row = {f"Q{i+1}: {q['text']}": responses[i] for i, q in enumerate(form["questions"])}
+                write_header = not os.path.exists(csv_filename)
+                with open(csv_filename, "a", newline="", encoding="utf-8") as f:
+                    writer = csv.DictWriter(f, fieldnames=row.keys())
+                    if write_header:
+                        writer.writeheader()
+                    writer.writerow(row)
+                st.success("✅ Your responses have been submitted!")
+                st.info(f"Saved to `{csv_filename}`")
+                if "responses" in st.session_state:
+                    del st.session_state["responses"]
+                if "current_q" in st.session_state:
+                    del st.session_state["current_q"]
+                st.rerun()
 
 # =====================
 # 📊 View Results (Admin Only)
@@ -190,7 +217,7 @@ elif page == "📊 View Results" and st.session_state.logged_in:
 
     csv_buffer = StringIO()
     df.to_csv(csv_buffer, index=False)
-    st.download_button("📥 Download Full Results (CSV)", csv_buffer.getvalue(), file_name=selected_csv, mime="text/csv")
+    st.download_button("📅 Download Full Results (CSV)", csv_buffer.getvalue(), file_name=selected_csv, mime="text/csv")
 
     clean_columns = {col: col.replace(":", "").strip() for col in df.columns}
     df = df.rename(columns=clean_columns)
@@ -255,11 +282,3 @@ elif page == "📊 View Results" and st.session_state.logged_in:
             with st.expander("👥 View individual ratings"):
                 for i, val in enumerate(df[clean_col]):
                     st.write(f"👤 Respondent {i+1}: **{val}**")
-
-# =====================
-# 🚪 Logout
-# =====================
-elif page == "🚪 Logout":
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.experimental_rerun()

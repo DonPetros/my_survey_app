@@ -7,44 +7,64 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from io import StringIO
 import sqlite3
+import hashlib
 
 # =====================
-# 🗃️ SQLite Setup for Admin Authentication
+# 🗃️ SQLite Setup for User Authentication
 # =====================
 conn = sqlite3.connect("users.db")
 c = conn.cursor()
-c.execute('''CREATE TABLE IF NOT EXISTS admin_users (
+c.execute('''CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
     password TEXT NOT NULL
 )''')
 conn.commit()
 
+# Helper to hash passwords
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
 # =====================
-# 👤 Login System Setup (Admin only)
+# 👤 Login/Sign-up System Setup
 # =====================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
 
+st.sidebar.title("🔑 Account")
+auth_option = st.sidebar.radio("Select Option:", ["Login", "Sign Up"])
+
 if not st.session_state.logged_in:
-    st.sidebar.title("🔑 Admin Login")
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
-    if st.sidebar.button("Login"):
-        c.execute("SELECT * FROM admin_users WHERE username = ? AND password = ?", (username, password))
-        user = c.fetchone()
-        if user:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.rerun()
-        else:
-            st.sidebar.error("Invalid credentials.")
+    if auth_option == "Login":
+        username = st.sidebar.text_input("Username")
+        password = st.sidebar.text_input("Password", type="password")
+        if st.sidebar.button("Login"):
+            c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
+            user = c.fetchone()
+            if user:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.rerun()
+            else:
+                st.sidebar.error("Invalid credentials.")
+
+    elif auth_option == "Sign Up":
+        new_username = st.sidebar.text_input("Choose a username")
+        new_password = st.sidebar.text_input("Choose a password", type="password")
+        if st.sidebar.button("Create Account"):
+            c.execute("SELECT * FROM users WHERE username = ?", (new_username,))
+            if c.fetchone():
+                st.sidebar.error("Username already exists.")
+            else:
+                c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, hash_password(new_password)))
+                conn.commit()
+                st.sidebar.success("Account created! You can now log in.")
 
 # =====================
 # 🚪 Sidebar Navigation
 # =====================
-st.sidebar.title("🧽 Navigation")
+st.sidebar.title("🧭 Navigation")
 if st.session_state.logged_in:
     page = st.sidebar.radio("Go to:", ["📇 Create Form", "📝 Answer a Form", "📊 View Results", "🚪 Logout"])
 else:
@@ -56,6 +76,37 @@ if page == "🚪 Logout":
     st.session_state.username = ""
     st.success("🔓 You have been logged out.")
     st.stop()
+
+# 🔧 The rest of your app (Create Form, Answer, View Results) stays unchanged...
+# You can copy and paste the rest of your logic below here
+
+# For example:
+if page == "📇 Create Form" and st.session_state.logged_in:
+    st.title("🌌 Build a Survey Across the Cosmos")
+    st.markdown("Add your own questions, choose the answer format, and save your custom survey form.")
+
+    MAX_QUESTIONS = 50
+    num_questions = st.number_input("How many questions would you like?", min_value=1, max_value=MAX_QUESTIONS, step=1)
+    questions = []
+
+    for i in range(int(num_questions)):
+        st.markdown(f"### Question {i+1}")
+        q_text = st.text_input(f"Enter question text for Q{i+1}:", key=f"text_{i}")
+        q_type = st.selectbox(f"Select type for Q{i+1}:", ["Text", "Scale (1–5)", "Multiple Choice"], key=f"type_{i}")
+        q_data = {"text": q_text, "type": q_type}
+        if q_type == "Multiple Choice":
+            options_text = st.text_input(f"Enter options for Q{i+1} (comma-separated, e.g. Yes, No, Maybe):", key=f"options_{i}")
+            q_data["options"] = [opt.strip() for opt in options_text.split(",") if opt.strip()]
+        questions.append(q_data)
+
+    form_title = st.text_input("Give your form a title:", value="My Survey")
+    if st.button("📂 Save Survey Form"):
+        form = {"title": form_title, "questions": questions}
+        os.makedirs("forms", exist_ok=True)
+        filename = f"forms/{form_title.replace(' ', '_').lower()}.json"
+        with open(filename, "w") as f:
+            json.dump(form, f, indent=4)
+        st.success(f"✅ Survey form saved as `{filename}`")
 
 # =====================
 # 🔧 Global Styling

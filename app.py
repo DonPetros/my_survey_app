@@ -107,8 +107,8 @@ if page == "🚪 Logout":
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.success("🔓 You have been logged out.")
-    st.experimental.rerun()  # Keep rerun here so UI updates immediately after logout
-    st.stop()
+    st.stop()  # Stop script, wait for next user interaction to rerun
+
 
 # =====================
 # 📇 Create Form (Admin Only)

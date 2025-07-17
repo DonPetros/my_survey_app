@@ -45,8 +45,7 @@ if not st.session_state.logged_in:
         if user:
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.experimental_rerun()  # This should be inside button handler
-            return  # stop further code execution after rerun
+            st.experimental_rerun()  # Keep this to refresh the app after login
         else:
             st.sidebar.error("Invalid credentials.")
 
@@ -62,7 +61,7 @@ if not st.session_state.logged_in:
                 conn.commit()
                 st.sidebar.success("Account created! You can now log in.")
                 st.experimental_rerun()
-                return
+
 
 
 # =====================

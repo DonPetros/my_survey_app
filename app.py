@@ -196,7 +196,6 @@ elif page == "📝 Answer a Form":
     with col2:
         if current_q < len(form["questions"]) - 1 and st.button("Next ➡️"):
             st.session_state["current_q"] = current_q + 1
-            st.experimental_rerun()
     with col3:
         if current_q == len(form["questions"]) - 1 and st.button("📩 Submit Responses"):
             if any(r is None or (isinstance(r, str) and not r.strip()) for r in responses):
@@ -218,7 +217,6 @@ elif page == "📝 Answer a Form":
                     del st.session_state["responses"]
                 if "current_q" in st.session_state:
                     del st.session_state["current_q"]
-                st.experimental_rerun()
 
 # =====================
 # 📊 View Results (Admin Only)

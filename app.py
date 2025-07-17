@@ -45,7 +45,7 @@ if not st.session_state.logged_in:
             if user:
                 st.session_state.logged_in = True
                 st.session_state.username = username
-                # No rerun here, Streamlit will rerun automatically on state change
+                # No rerun here, Streamlit auto reruns on state change
             else:
                 st.sidebar.error("Invalid credentials.")
 
@@ -107,8 +107,7 @@ if page == "🚪 Logout":
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.success("🔓 You have been logged out.")
-    st.stop()  # Stop script, wait for next user interaction to rerun
-
+    st.stop()  # Wait for next user interaction to rerun
 
 # =====================
 # 📇 Create Form (Admin Only)
@@ -152,7 +151,15 @@ if page == "📇 Create Form" and st.session_state.logged_in:
 # =====================
 # 📝 Answer a Form (Public)
 # =====================
-elif page == "📝 Answer a Form":
+
+# Navigation button callbacks
+def next_question():
+    st.session_state.current_q += 1
+
+def previous_question():
+    st.session_state.current_q -= 1
+
+if page == "📝 Answer a Form":
     st.title("📝 Respond to a Survey")
     form_dir = "forms"
     os.makedirs(form_dir, exist_ok=True)
@@ -167,8 +174,15 @@ elif page == "📝 Answer a Form":
         form = json.load(f)
 
     st.header(form["title"])
-    responses = st.session_state.get("responses", [None] * len(form["questions"]))
-    current_q = st.session_state.get("current_q", 0)
+
+    # Initialize session state for current_q and responses if missing
+    if "current_q" not in st.session_state:
+        st.session_state.current_q = 0
+    if "responses" not in st.session_state:
+        st.session_state.responses = [None] * len(form["questions"])
+
+    current_q = st.session_state.current_q
+    responses = st.session_state.responses
 
     question = form["questions"][current_q]
     q_text = question["text"]
@@ -185,38 +199,37 @@ elif page == "📝 Answer a Form":
     else:
         answer = "Unsupported question type"
 
-    responses[current_q] = answer
-    st.session_state["responses"] = responses
+    # Update stored responses immediately
+    st.session_state.responses[current_q] = answer
 
     col1, col2, col3 = st.columns([1, 1, 2])
     with col1:
-        if current_q > 0 and st.button("⬅️ Previous"):
-            st.session_state["current_q"] = current_q - 1
-            st.experimental_rerun()
+        if current_q > 0:
+            st.button("⬅️ Previous", on_click=previous_question)
     with col2:
-        if current_q < len(form["questions"]) - 1 and st.button("Next ➡️"):
-            st.session_state["current_q"] = current_q + 1
+        if current_q < len(form["questions"]) - 1:
+            st.button("Next ➡️", on_click=next_question)
     with col3:
-        if current_q == len(form["questions"]) - 1 and st.button("📩 Submit Responses"):
-            if any(r is None or (isinstance(r, str) and not r.strip()) for r in responses):
-                st.error("❗ Please answer all questions before submitting.")
-            else:
-                os.makedirs("responses", exist_ok=True)
-                form_name = selected_form_file.replace(".json", "")
-                csv_filename = f"responses/{form_name}.csv"
-                row = {f"Q{i+1}: {q['text']}": responses[i] for i, q in enumerate(form["questions"])}
-                write_header = not os.path.exists(csv_filename)
-                with open(csv_filename, "a", newline="", encoding="utf-8") as f:
-                    writer = csv.DictWriter(f, fieldnames=row.keys())
-                    if write_header:
-                        writer.writeheader()
-                    writer.writerow(row)
-                st.success("✅ Your responses have been submitted!")
-                st.info(f"Saved to `{csv_filename}`")
-                if "responses" in st.session_state:
-                    del st.session_state["responses"]
-                if "current_q" in st.session_state:
-                    del st.session_state["current_q"]
+        if current_q == len(form["questions"]) - 1:
+            if st.button("📩 Submit Responses"):
+                if any(r is None or (isinstance(r, str) and not r.strip()) for r in responses):
+                    st.error("❗ Please answer all questions before submitting.")
+                else:
+                    os.makedirs("responses", exist_ok=True)
+                    form_name = selected_form_file.replace(".json", "")
+                    csv_filename = f"responses/{form_name}.csv"
+                    row = {f"Q{i+1}: {q['text']}": responses[i] for i, q in enumerate(form["questions"])}
+                    write_header = not os.path.exists(csv_filename)
+                    with open(csv_filename, "a", newline="", encoding="utf-8") as f:
+                        writer = csv.DictWriter(f, fieldnames=row.keys())
+                        if write_header:
+                            writer.writeheader()
+                        writer.writerow(row)
+                    st.success("✅ Your responses have been submitted!")
+                    st.info(f"Saved to `{csv_filename}`")
+                    # Clear stored responses and reset question index
+                    del st.session_state.responses
+                    del st.session_state.current_q
 
 # =====================
 # 📊 View Results (Admin Only)

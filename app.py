@@ -25,7 +25,7 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 # =====================
-# 👤 Login/Sign-up System Setup (Moved to top)
+# 👤 Login/Sign-up System Setup
 # =====================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -47,6 +47,7 @@ if not st.session_state.logged_in:
                 if user:
                     st.session_state.logged_in = True
                     st.session_state.username = username
+                    st.experimental_rerun()  # Immediate UI refresh on login success
                 else:
                     st.sidebar.error("Invalid credentials.")
 
@@ -55,7 +56,6 @@ if not st.session_state.logged_in:
             new_username = st.text_input("Choose a username", key="signup_username")
             new_password = st.text_input("Choose a password", type="password", key="signup_password")
             signup_submitted = st.form_submit_button("Create Account")
-
         if signup_submitted:
             c.execute("SELECT * FROM users WHERE username = ?", (new_username,))
             if c.fetchone():
@@ -64,12 +64,7 @@ if not st.session_state.logged_in:
                 c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, hash_password(new_password)))
                 conn.commit()
                 st.sidebar.success("Account created! You can now log in.")
-                # Refresh UI on next interaction:
-                if "dummy_rerun" not in st.session_state:
-                    st.session_state.dummy_rerun = 0
-                st.session_state.dummy_rerun += 1
-                st.stop()
-
+                st.experimental_rerun()  # Refresh UI after signup
 
 # =====================
 # 🔧 Global Styling
@@ -103,7 +98,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =====================
-# 🚪 Sidebar Navigation
+# 🚪 Sidebar Navigation & Logout
 # =====================
 st.sidebar.title("Navigation")
 if st.session_state.logged_in:
@@ -111,16 +106,11 @@ if st.session_state.logged_in:
 else:
     page = st.sidebar.radio("Go to:", ["📝 Answer a Form"])
 
-# ✅ Handle logout directly (alternative to experimental_rerun)
 if page == "🚪 Logout":
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.success("🔓 You have been logged out.")
-    if "dummy_rerun" not in st.session_state:
-        st.session_state.dummy_rerun = 0
-    st.session_state.dummy_rerun += 1
-    st.stop()
-
+    st.experimental_rerun()  # Immediate UI refresh after logout
 
 # =====================
 # 📇 Create Form (Admin Only)
@@ -162,7 +152,7 @@ if page == "📇 Create Form" and st.session_state.logged_in:
             st.success(f"✅ Survey form saved as `{filename}`")
 
 # =====================
-# 📝 Answer a Form (Public)
+# 📝 Answer a Form
 # =====================
 elif page == "📝 Answer a Form":
     st.title("📝 Respond to a Survey")
@@ -188,12 +178,12 @@ elif page == "📝 Answer a Form":
 
     st.markdown(f"### Q{current_q + 1}: {q_text}")
     if q_type == "Text":
-        answer = st.text_input("Your answer:", value=responses[current_q] or "")
+        answer = st.text_input("Your answer:", value=responses[current_q] or "", key=f"answer_{current_q}")
     elif q_type == "Scale (1–5)":
-        answer = st.slider("Rate from 1 to 5", 1, 5, value=responses[current_q] or 3)
+        answer = st.slider("Rate from 1 to 5", 1, 5, value=responses[current_q] or 3, key=f"answer_{current_q}")
     elif q_type == "Multiple Choice":
         options = question.get("options", [])
-        answer = st.radio("Choose one:", options, index=options.index(responses[current_q]) if responses[current_q] in options else 0)
+        answer = st.radio("Choose one:", options, index=options.index(responses[current_q]) if responses[current_q] in options else 0, key=f"answer_{current_q}")
     else:
         answer = "Unsupported question type"
 
@@ -204,17 +194,11 @@ elif page == "📝 Answer a Form":
     with col1:
         if current_q > 0 and st.button("⬅️ Previous"):
             st.session_state.current_q = current_q - 1
-            if "dummy_rerun" not in st.session_state:
-                st.session_state.dummy_rerun = 0
-            st.session_state.dummy_rerun += 1
-            st.stop()
+            st.experimental_rerun()  # Immediate UI refresh on previous
     with col2:
         if current_q < len(form["questions"]) - 1 and st.button("Next ➡️"):
             st.session_state.current_q = current_q + 1
-            if "dummy_rerun" not in st.session_state:
-                st.session_state.dummy_rerun = 0
-            st.session_state.dummy_rerun += 1
-            st.stop()
+            st.experimental_rerun()  # Immediate UI refresh on next
     with col3:
         if current_q == len(form["questions"]) - 1 and st.button("📩 Submit Responses"):
             if any(r is None or (isinstance(r, str) and not r.strip()) for r in responses):

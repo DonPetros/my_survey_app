@@ -45,7 +45,7 @@ if not st.session_state.logged_in:
             if user:
                 st.session_state.logged_in = True
                 st.session_state.username = username
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.sidebar.error("Invalid credentials.")
 
@@ -60,6 +60,37 @@ if not st.session_state.logged_in:
                 c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, hash_password(new_password)))
                 conn.commit()
                 st.sidebar.success("Account created! You can now log in.")
+
+# =====================
+# 🔧 Global Styling
+# =====================
+st.markdown("""
+    <style>
+    .stApp {
+        background: linear-gradient(to right, #141e30, #243b55);
+        color: white;
+    }
+    h1, h2, h3, p, label {
+        transition: transform 0.2s ease-in-out;
+    }
+    h1:hover, h2:hover, h3:hover, p:hover, label:hover {
+        transform: scale(1.05);
+    }
+    .stButton button, .stDownloadButton button {
+        background-color: #ff4b2b;
+        color: white;
+        border: none;
+        padding: 0.5em 1em;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .stButton button:hover, .stDownloadButton button:hover {
+        background-color: #ff416c;
+        transform: scale(1.05);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # =====================
 # 🚪 Sidebar Navigation
@@ -117,36 +148,6 @@ if page == "📇 Create Form" and st.session_state.logged_in:
             st.success(f"✅ Survey form saved as `{filename}`")
 
 # =====================
-# 🔧 Global Styling
-# =====================
-st.markdown("""
-    <style>
-    .stApp {
-        background: linear-gradient(to right, #141e30, #243b55);
-        color: white;
-    }
-    h1, h2, h3, p, label {
-        transition: transform 0.2s ease-in-out;
-    }
-    h1:hover, h2:hover, h3:hover, p:hover, label:hover {
-        transform: scale(1.05);
-    }
-    .stButton button, .stDownloadButton button {
-        background-color: #ff4b2b;
-        color: white;
-        border: none;
-        padding: 0.5em 1em;
-        border-radius: 8px;
-        font-weight: bold;
-        transition: background-color 0.3s ease, transform 0.2s ease;
-    }
-    .stButton button:hover, .stDownloadButton button:hover {
-        background-color: #ff416c;
-        transform: scale(1.05);
-    }
-    </style>
-""", unsafe_allow_html=True)
-# =====================
 # 📝 Answer a Form (Public)
 # =====================
 elif page == "📝 Answer a Form":
@@ -189,11 +190,11 @@ elif page == "📝 Answer a Form":
     with col1:
         if current_q > 0 and st.button("⬅️ Previous"):
             st.session_state["current_q"] = current_q - 1
-            st.rerun()
+            st.experimental_rerun()
     with col2:
         if current_q < len(form["questions"]) - 1 and st.button("Next ➡️"):
             st.session_state["current_q"] = current_q + 1
-            st.rerun()
+            st.experimental_rerun()
     with col3:
         if current_q == len(form["questions"]) - 1 and st.button("📩 Submit Responses"):
             if any(r is None or (isinstance(r, str) and not r.strip()) for r in responses):
@@ -215,7 +216,7 @@ elif page == "📝 Answer a Form":
                     del st.session_state["responses"]
                 if "current_q" in st.session_state:
                     del st.session_state["current_q"]
-                st.rerun()
+                st.experimental_rerun()
 
 # =====================
 # 📊 View Results (Admin Only)

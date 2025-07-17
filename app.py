@@ -107,7 +107,7 @@ if page == "🚪 Logout":
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.success("🔓 You have been logged out.")
-    st.experimental_rerun()  # Keep rerun here so UI updates immediately after logout
+    st.experimental.rerun()  # Keep rerun here so UI updates immediately after logout
     st.stop()
 
 # =====================

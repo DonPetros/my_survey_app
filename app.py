@@ -25,7 +25,7 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 # =====================
-# 👤 Login/Sign-up System Setup
+# 👤 Login/Sign-up System Setup (Moved to top)
 # =====================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -36,18 +36,18 @@ st.sidebar.title("🔑 Account")
 auth_option = st.sidebar.radio("Select Option:", ["Login", "Sign Up"])
 
 if not st.session_state.logged_in:
-   if auth_option == "Login":
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
-    if st.sidebar.button("Login"):
-        c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
-        user = c.fetchone()
-        if user:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.experimental_rerun()  # Keep this to refresh the app after login
-        else:
-            st.sidebar.error("Invalid credentials.")
+    if auth_option == "Login":
+        username = st.sidebar.text_input("Username")
+        password = st.sidebar.text_input("Password", type="password")
+        if st.sidebar.button("Login"):
+            c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
+            user = c.fetchone()
+            if user:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                # No rerun here, Streamlit will rerun automatically on state change
+            else:
+                st.sidebar.error("Invalid credentials.")
 
     elif auth_option == "Sign Up":
         new_username = st.sidebar.text_input("Choose a username")
@@ -60,9 +60,7 @@ if not st.session_state.logged_in:
                 c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, hash_password(new_password)))
                 conn.commit()
                 st.sidebar.success("Account created! You can now log in.")
-                st.experimental_rerun()
-
-
+                # No rerun here either
 
 # =====================
 # 🔧 Global Styling
@@ -109,6 +107,7 @@ if page == "🚪 Logout":
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.success("🔓 You have been logged out.")
+    st.experimental_rerun()  # Keep rerun here so UI updates immediately after logout
     st.stop()
 
 # =====================

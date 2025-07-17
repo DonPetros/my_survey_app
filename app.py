@@ -37,20 +37,19 @@ auth_option = st.sidebar.radio("Select Option:", ["Login", "Sign Up"])
 
 if not st.session_state.logged_in:
     if auth_option == "Login":
-        with st.sidebar.form("login_form", clear_on_submit=False):
-            username = st.text_input("Username", key="login_username")
-            password = st.text_input("Password", type="password", key="login_password")
-            login_submitted = st.form_submit_button("Login")
-
-        if login_submitted:
-            c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
-            user = c.fetchone()
-            if user:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.experimental_rerun()  # Refresh UI after login
-            else:
-                st.sidebar.error("Invalid credentials.")
+        with st.sidebar.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("Login")
+            if submitted:
+                c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
+                user = c.fetchone()
+                if user:
+                    st.session_state.logged_in = True
+                    st.session_state.username = username
+                    st.experimental_rerun()  # Should work properly here for rerun
+                else:
+                    st.sidebar.error("Invalid credentials.")
 
     elif auth_option == "Sign Up":
         with st.sidebar.form("signup_form", clear_on_submit=False):
@@ -113,7 +112,12 @@ if page == "🚪 Logout":
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.success("🔓 You have been logged out.")
-    st.experimental_rerun()  # Refresh UI immediately after logout
+    # Trigger UI rerun indirectly by changing a dummy variable:
+    if "dummy_rerun" not in st.session_state:
+        st.session_state.dummy_rerun = 0
+    st.session_state.dummy_rerun += 1
+    st.stop()  # stop this run, wait for the next interaction (forced rerun by state change)
+
 
 # =====================
 # 📇 Create Form (Admin Only)

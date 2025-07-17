@@ -36,18 +36,19 @@ st.sidebar.title("🔑 Account")
 auth_option = st.sidebar.radio("Select Option:", ["Login", "Sign Up"])
 
 if not st.session_state.logged_in:
-    if auth_option == "Login":
-        username = st.sidebar.text_input("Username")
-        password = st.sidebar.text_input("Password", type="password")
-        if st.sidebar.button("Login"):
-            c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
-            user = c.fetchone()
-            if user:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.experimental_rerun()
-            else:
-                st.sidebar.error("Invalid credentials.")
+   if auth_option == "Login":
+    username = st.sidebar.text_input("Username")
+    password = st.sidebar.text_input("Password", type="password")
+    if st.sidebar.button("Login"):
+        c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
+        user = c.fetchone()
+        if user:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.experimental_rerun()  # This should be inside button handler
+            return  # stop further code execution after rerun
+        else:
+            st.sidebar.error("Invalid credentials.")
 
     elif auth_option == "Sign Up":
         new_username = st.sidebar.text_input("Choose a username")
@@ -60,6 +61,9 @@ if not st.session_state.logged_in:
                 c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, hash_password(new_password)))
                 conn.commit()
                 st.sidebar.success("Account created! You can now log in.")
+                st.experimental_rerun()
+                return
+
 
 # =====================
 # 🔧 Global Styling

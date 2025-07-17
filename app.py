@@ -96,7 +96,7 @@ st.markdown("""
 # =====================
 # 🚪 Sidebar Navigation
 # =====================
-st.sidebar.title("🫭 Navigation")
+st.sidebar.title("Navigation")
 if st.session_state.logged_in:
     page = st.sidebar.radio("Go to:", ["📇 Create Form", "📝 Answer a Form", "📊 View Results", "🚪 Logout"])
 else:

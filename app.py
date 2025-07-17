@@ -47,7 +47,6 @@ if not st.session_state.logged_in:
                 if user:
                     st.session_state.logged_in = True
                     st.session_state.username = username
-                    st.experimental_rerun()  # Should work properly here for rerun
                 else:
                     st.sidebar.error("Invalid credentials.")
 

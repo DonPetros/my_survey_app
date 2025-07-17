@@ -25,46 +25,47 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 # =====================
-# 👤 Login/Sign-up System Setup (Moved to top)
+# 👤 Login/Sign-up System Setup
 # =====================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
 
+# Sidebar login/logout UI
 st.sidebar.title("🔑 Account")
-auth_option = st.sidebar.radio("Select Option:", ["Login", "Sign Up"])
 
 if not st.session_state.logged_in:
-    if auth_option == "Login":
-        with st.sidebar.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submitted = st.form_submit_button("Login")
-            if submitted:
-                c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
-                user = c.fetchone()
-                if user:
-                    st.session_state.logged_in = True
-                    st.session_state.username = username
-                else:
-                    st.sidebar.error("Invalid credentials.")
-
-    elif auth_option == "Sign Up":
-        with st.sidebar.form("signup_form", clear_on_submit=False):
-            new_username = st.text_input("Choose a username", key="signup_username")
-            new_password = st.text_input("Choose a password", type="password", key="signup_password")
-            signup_submitted = st.form_submit_button("Create Account")
-
-        if signup_submitted:
-            c.execute("SELECT * FROM users WHERE username = ?", (new_username,))
-            if c.fetchone():
-                st.sidebar.error("Username already exists.")
+    with st.sidebar.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login")
+        if submitted:
+            c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
+            user = c.fetchone()
+            if user:
+                st.session_state.logged_in = True
+                st.session_state.username = username
             else:
-                c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, hash_password(new_password)))
-                conn.commit()
-                st.sidebar.success("Account created! You can now log in.")
-                st.experimental_rerun()
+                st.sidebar.error("Invalid credentials.")
+    with st.sidebar.form("signup_form", clear_on_submit=False):
+        new_username = st.text_input("Choose a username", key="signup_username")
+        new_password = st.text_input("Choose a password", type="password", key="signup_password")
+        signup_submitted = st.form_submit_button("Create Account")
+    if signup_submitted:
+        c.execute("SELECT * FROM users WHERE username = ?", (new_username,))
+        if c.fetchone():
+            st.sidebar.error("Username already exists.")
+        else:
+            c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, hash_password(new_password)))
+            conn.commit()
+            st.sidebar.success("Account created! You can now log in.")
+else:
+    st.sidebar.write(f"Logged in as **{st.session_state.username}**")
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.success("🔓 You have been logged out.")
 
 # =====================
 # 🔧 Global Styling
@@ -105,18 +106,6 @@ if st.session_state.logged_in:
     page = st.sidebar.radio("Go to:", ["📇 Create Form", "📝 Answer a Form", "📊 View Results", "🚪 Logout"])
 else:
     page = st.sidebar.radio("Go to:", ["📝 Answer a Form"])
-
-# ✅ Handle logout directly
-if page == "🚪 Logout":
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.success("🔓 You have been logged out.")
-    # Trigger UI rerun indirectly by changing a dummy variable:
-    if "dummy_rerun" not in st.session_state:
-        st.session_state.dummy_rerun = 0
-    st.session_state.dummy_rerun += 1
-    st.stop()  # stop this run, wait for the next interaction (forced rerun by state change)
-
 
 # =====================
 # 📇 Create Form (Admin Only)
@@ -200,10 +189,13 @@ elif page == "📝 Answer a Form":
     with col1:
         if current_q > 0 and st.button("⬅️ Previous"):
             st.session_state["current_q"] = current_q - 1
-            st.experimental_rerun()
+            st.stop()  # Immediate rerun to show previous question
+
     with col2:
         if current_q < len(form["questions"]) - 1 and st.button("Next ➡️"):
             st.session_state["current_q"] = current_q + 1
+            st.stop()  # Immediate rerun to show next question
+
     with col3:
         if current_q == len(form["questions"]) - 1 and st.button("📩 Submit Responses"):
             if any(r is None or (isinstance(r, str) and not r.strip()) for r in responses):
@@ -225,7 +217,6 @@ elif page == "📝 Answer a Form":
                     del st.session_state["responses"]
                 if "current_q" in st.session_state:
                     del st.session_state["current_q"]
-
 
 # =====================
 # 📊 View Results (Admin Only)
